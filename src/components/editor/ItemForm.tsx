@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   TextInput,
   Select,
@@ -10,6 +11,8 @@ import {
 import { useForm } from "@mantine/form";
 import type { Item, CreateItemInput, ItemType } from "../../types";
 import { ITEM_TYPES, LANGUAGES } from "../../types";
+import { findDuplicates } from "../../lib/find-duplicates";
+import { DuplicateWarning } from "./DuplicateWarning";
 
 interface ItemFormProps {
   item?: Item | null;
@@ -19,6 +22,10 @@ interface ItemFormProps {
 }
 
 export function ItemForm({ item, onSubmit, onCancel, loading }: ItemFormProps) {
+  const [duplicates, setDuplicates] = useState<Item[]>([]);
+  const [pendingValues, setPendingValues] = useState<CreateItemInput | null>(null);
+  const [checking, setChecking] = useState(false);
+
   const form = useForm({
     initialValues: {
       title: item?.title || "",
@@ -34,8 +41,41 @@ export function ItemForm({ item, onSubmit, onCancel, loading }: ItemFormProps) {
     },
   });
 
+  const handleSubmit = async (values: CreateItemInput) => {
+    const text = `${values.title || ""} ${values.content || ""}`;
+
+    setChecking(true);
+    try {
+      const matches = await findDuplicates(text, item?.id);
+      if (matches.length > 0) {
+        setPendingValues(values);
+        setDuplicates(matches);
+      } else {
+        onSubmit(values);
+      }
+    } catch (e) {
+      console.warn("[DuplicateCheck] failed, proceeding:", e);
+      onSubmit(values);
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  const handleProceed = () => {
+    if (pendingValues) {
+      onSubmit(pendingValues);
+    }
+    setDuplicates([]);
+    setPendingValues(null);
+  };
+
+  const handleCancelDuplicates = () => {
+    setDuplicates([]);
+    setPendingValues(null);
+  };
+
   return (
-    <form onSubmit={form.onSubmit(onSubmit)}>
+    <form onSubmit={form.onSubmit(handleSubmit)}>
       <Stack gap="sm">
         <TextInput
           label="Title"
@@ -81,11 +121,18 @@ export function ItemForm({ item, onSubmit, onCancel, loading }: ItemFormProps) {
           styles={{ input: { fontFamily: "monospace" } }}
           {...form.getInputProps("content")}
         />
+        {duplicates.length > 0 && (
+          <DuplicateWarning
+            duplicates={duplicates}
+            onProceed={handleProceed}
+            onCancel={handleCancelDuplicates}
+          />
+        )}
         <Group justify="flex-end">
           <Button variant="subtle" onClick={onCancel}>
             Cancel
           </Button>
-          <Button type="submit" loading={loading}>
+          <Button type="submit" loading={loading || checking}>
             {item ? "Update" : "Create"}
           </Button>
         </Group>

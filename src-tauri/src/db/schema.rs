@@ -52,5 +52,9 @@ pub fn initialize_db(conn: &Connection) -> Result<()> {
         );
         ",
     )?;
+
+    // Rebuild FTS index from content table on startup
+    conn.execute_batch("INSERT INTO items_fts(items_fts) VALUES('rebuild');")?;
+
     Ok(())
 }

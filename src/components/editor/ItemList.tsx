@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Card,
   Text,
@@ -6,17 +7,21 @@ import {
   Stack,
   ActionIcon,
   Code,
+  Modal,
+  Button,
 } from "@mantine/core";
 import { IconTrash, IconEdit } from "@tabler/icons-react";
 import type { Item } from "../../types";
 
 interface ItemListProps {
   items: Item[];
+  onView: (item: Item) => void;
   onEdit: (item: Item) => void;
   onDelete: (id: string) => void;
 }
 
-export function ItemList({ items, onEdit, onDelete }: ItemListProps) {
+export function ItemList({ items, onView, onEdit, onDelete }: ItemListProps) {
+  const [deleteTarget, setDeleteTarget] = useState<Item | null>(null);
   if (items.length === 0) {
     return (
       <Text c="dimmed" ta="center" py="xl">
@@ -28,7 +33,7 @@ export function ItemList({ items, onEdit, onDelete }: ItemListProps) {
   return (
     <Stack gap="sm">
       {items.map((item) => (
-        <Card key={item.id} shadow="xs" padding="sm" withBorder>
+        <Card key={item.id} shadow="xs" padding="sm" withBorder onClick={() => onView(item)} style={{ cursor: "pointer" }}>
           <Group justify="space-between" wrap="nowrap">
             <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
               <Group gap="xs">
@@ -67,7 +72,7 @@ export function ItemList({ items, onEdit, onDelete }: ItemListProps) {
             <Group gap={4}>
               <ActionIcon
                 variant="subtle"
-                onClick={() => onEdit(item)}
+                onClick={(e) => { e.stopPropagation(); onEdit(item); }}
                 aria-label="Edit"
               >
                 <IconEdit size={16} />
@@ -75,7 +80,7 @@ export function ItemList({ items, onEdit, onDelete }: ItemListProps) {
               <ActionIcon
                 variant="subtle"
                 color="red"
-                onClick={() => onDelete(item.id)}
+                onClick={(e) => { e.stopPropagation(); setDeleteTarget(item); }}
                 aria-label="Delete"
               >
                 <IconTrash size={16} />
@@ -84,6 +89,33 @@ export function ItemList({ items, onEdit, onDelete }: ItemListProps) {
           </Group>
         </Card>
       ))}
+      <Modal
+        opened={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        title="Delete item"
+        size="sm"
+        centered
+      >
+        <Stack gap="md">
+          <Text size="sm">
+            Are you sure you want to delete <Text span fw={600}>"{deleteTarget?.title}"</Text>? This cannot be undone.
+          </Text>
+          <Group justify="flex-end">
+            <Button variant="subtle" onClick={() => setDeleteTarget(null)}>
+              Cancel
+            </Button>
+            <Button
+              color="red"
+              onClick={() => {
+                if (deleteTarget) onDelete(deleteTarget.id);
+                setDeleteTarget(null);
+              }}
+            >
+              Delete
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Stack>
   );
 }

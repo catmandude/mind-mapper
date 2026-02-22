@@ -4,7 +4,7 @@ mod db;
 mod files;
 mod state;
 
-use commands::{search, settings, snippets};
+use commands::{ai as ai_commands, search, settings, snippets};
 use rusqlite::Connection;
 use state::AppState;
 use std::fs;
@@ -85,6 +85,13 @@ pub fn run() {
                 })
                 .build(app)?;
 
+            // Initialize AI provider from saved settings
+            let ai_handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                let state = ai_handle.state::<AppState>();
+                ai_commands::rebuild_ai_provider(&state).await;
+            });
+
             // Set up file watcher
             let app_handle = app.handle().clone();
             let watch_dir = data_dir.clone();
@@ -127,6 +134,8 @@ pub fn run() {
             settings::get_setting,
             settings::set_setting,
             settings::get_data_dir,
+            ai_commands::get_ai_settings,
+            ai_commands::set_ai_settings,
         ])
         .on_window_event(|window, event| {
             // Hide search window on blur instead of closing

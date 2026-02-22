@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { Item, CreateItemInput, UpdateItemInput } from "../types";
+import type { Item, CreateItemInput, UpdateItemInput, AiSettings, AiSettingsInput } from "../types";
 
 export async function createItem(input: CreateItemInput): Promise<Item> {
   return invoke("create_item", { input });
@@ -43,4 +43,12 @@ export async function setSetting(key: string, value: string): Promise<void> {
 
 export async function getDataDir(): Promise<string> {
   return invoke("get_data_dir");
+}
+
+export async function getAiSettings(): Promise<AiSettings> {
+  return invoke("get_ai_settings");
+}
+
+export async function setAiSettings(input: AiSettingsInput): Promise<AiSettings> {
+  return invoke("set_ai_settings", { input });
 }

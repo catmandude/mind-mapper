@@ -14,7 +14,7 @@ export interface Item {
 }
 
 export interface CreateItemInput {
-  title: string;
+  title?: string;
   type?: string;
   language?: string;
   tags?: string[];
@@ -41,6 +41,27 @@ export const ITEM_TYPES: { value: ItemType; label: string }[] = [
   { value: "shell", label: "Shell Command" },
   { value: "snippet", label: "Code Snippet" },
   { value: "config", label: "Configuration" },
+];
+
+export interface AiSettings {
+  provider: string;
+  model: string;
+  base_url: string;
+  has_api_key: boolean;
+  is_configured: boolean;
+}
+
+export interface AiSettingsInput {
+  provider: string;
+  model: string;
+  api_key?: string;
+  base_url?: string;
+}
+
+export const AI_PROVIDERS = [
+  { value: "openai", label: "OpenAI" },
+  { value: "claude", label: "Claude" },
+  { value: "ollama", label: "Ollama" },
 ];
 
 export const LANGUAGES = [

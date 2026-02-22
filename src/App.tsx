@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   AppShell,
   Title,
@@ -7,13 +7,19 @@ import {
   Modal,
   TextInput,
   ScrollArea,
+  ActionIcon,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
-import { IconPlus, IconSearch } from "@tabler/icons-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { listen } from "@tauri-apps/api/event";
+import { IconPlus, IconSearch, IconSettings, IconBolt } from "@tabler/icons-react";
 import { Sidebar } from "./components/sidebar/Sidebar";
 import { ItemList } from "./components/editor/ItemList";
 import { ItemForm } from "./components/editor/ItemForm";
+import { ItemViewer } from "./components/editor/ItemViewer";
+import { AISettings } from "./components/settings/AISettings";
+import { QuickAdd } from "./components/editor/QuickAdd";
 import {
   useItems,
   useCreateItem,
@@ -28,9 +34,29 @@ export default function App() {
   const updateMutation = useUpdateItem();
   const deleteMutation = useDeleteItem();
 
+  const queryClient = useQueryClient();
   const [opened, { open, close }] = useDisclosure(false);
+  const [settingsOpened, { open: openSettings, close: closeSettings }] =
+    useDisclosure(false);
+  const [quickAddOpened, { open: openQuickAdd, close: closeQuickAdd }] =
+    useDisclosure(false);
+  const [viewerOpened, { open: openViewer, close: closeViewer }] =
+    useDisclosure(false);
   const [editingItem, setEditingItem] = useState<Item | null>(null);
+  const [viewingItem, setViewingItem] = useState<Item | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Listen for AI enrichment events to refresh item lists
+  useEffect(() => {
+    const unlisten = listen("items-changed", () => {
+      queryClient.invalidateQueries({ queryKey: ["items"] });
+      queryClient.invalidateQueries({ queryKey: ["tags"] });
+      queryClient.invalidateQueries({ queryKey: ["folders"] });
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [queryClient]);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<string | null>(null);
@@ -62,6 +88,11 @@ export default function App() {
   const handleCreate = () => {
     setEditingItem(null);
     open();
+  };
+
+  const handleView = (item: Item) => {
+    setViewingItem(item);
+    openViewer();
   };
 
   const handleEdit = (item: Item) => {
@@ -124,15 +155,22 @@ export default function App() {
               onChange={(e) => setSearchQuery(e.currentTarget.value)}
               style={{ width: 250 }}
             />
+            <Button leftSection={<IconBolt size={16} />} variant="light" onClick={openQuickAdd}>
+              Quick Add
+            </Button>
             <Button leftSection={<IconPlus size={16} />} onClick={handleCreate}>
               New Item
             </Button>
+            <ActionIcon variant="subtle" onClick={openSettings} size="lg">
+              <IconSettings size={20} />
+            </ActionIcon>
           </Group>
         </Group>
 
         <ScrollArea>
           <ItemList
             items={filteredItems}
+            onView={handleView}
             onEdit={handleEdit}
             onDelete={handleDelete}
           />
@@ -151,6 +189,15 @@ export default function App() {
           onCancel={close}
           loading={createMutation.isPending || updateMutation.isPending}
         />
+      </Modal>
+      <Modal opened={settingsOpened} onClose={closeSettings} title="Settings" size="md">
+        <AISettings />
+      </Modal>
+      <Modal opened={quickAddOpened} onClose={closeQuickAdd} title="Quick Add" size="md">
+        <QuickAdd onSuccess={closeQuickAdd} />
+      </Modal>
+      <Modal opened={viewerOpened} onClose={closeViewer} title={viewingItem?.title ?? "View Item"} size="lg">
+        <ItemViewer item={viewingItem} onClose={closeViewer} />
       </Modal>
     </AppShell>
   );
