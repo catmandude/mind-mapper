@@ -16,10 +16,19 @@ use tauri::{
 };
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 
-fn get_data_dir() -> PathBuf {
-    let dir = dirs::document_dir()
+fn default_data_dir() -> PathBuf {
+    dirs::document_dir()
         .unwrap_or_else(|| dirs::home_dir().unwrap_or_else(|| PathBuf::from(".")))
-        .join("MindMapper");
+        .join("MindMapper")
+}
+
+fn resolve_data_dir(conn: &Connection) -> PathBuf {
+    let dir = conn
+        .prepare("SELECT value FROM settings WHERE key = 'data_dir'")
+        .and_then(|mut stmt| stmt.query_row([], |row| row.get::<_, String>(0)))
+        .ok()
+        .map(PathBuf::from)
+        .unwrap_or_else(default_data_dir);
     fs::create_dir_all(&dir).expect("Failed to create data directory");
     dir
 }
@@ -34,11 +43,12 @@ fn get_db_path() -> PathBuf {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let data_dir = get_data_dir();
     let db_path = get_db_path();
 
     let conn = Connection::open(&db_path).expect("Failed to open database");
     db::schema::initialize_db(&conn).expect("Failed to initialize database schema");
+
+    let data_dir = resolve_data_dir(&conn);
 
     // Run initial reconciliation
     match files::sync::reconcile(&conn, &data_dir) {
@@ -134,6 +144,7 @@ pub fn run() {
             settings::get_setting,
             settings::set_setting,
             settings::get_data_dir,
+            settings::set_data_dir,
             ai_commands::get_ai_settings,
             ai_commands::set_ai_settings,
         ])

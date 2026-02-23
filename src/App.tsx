@@ -13,12 +13,13 @@ import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { useQueryClient } from "@tanstack/react-query";
 import { listen } from "@tauri-apps/api/event";
-import { IconPlus, IconSearch, IconSettings, IconBolt } from "@tabler/icons-react";
+import { IconPlus, IconSearch, IconSettings, IconBolt, IconList, IconGraph } from "@tabler/icons-react";
 import { Sidebar } from "./components/sidebar/Sidebar";
 import { ItemList } from "./components/editor/ItemList";
 import { ItemForm } from "./components/editor/ItemForm";
 import { ItemViewer } from "./components/editor/ItemViewer";
-import { AISettings } from "./components/settings/AISettings";
+import { Settings } from "./components/settings/Settings";
+import { GraphView } from "./components/graph/GraphView";
 import { QuickAdd } from "./components/editor/QuickAdd";
 import {
   useItems,
@@ -45,6 +46,7 @@ export default function App() {
   const [editingItem, setEditingItem] = useState<Item | null>(null);
   const [viewingItem, setViewingItem] = useState<Item | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [viewMode, setViewMode] = useState<"list" | "graph">("list");
 
   // Listen for AI enrichment events to refresh item lists
   useEffect(() => {
@@ -155,6 +157,22 @@ export default function App() {
               onChange={(e) => setSearchQuery(e.currentTarget.value)}
               style={{ width: 250 }}
             />
+            <ActionIcon.Group>
+              <ActionIcon
+                variant={viewMode === "list" ? "filled" : "default"}
+                onClick={() => setViewMode("list")}
+                size="lg"
+              >
+                <IconList size={18} />
+              </ActionIcon>
+              <ActionIcon
+                variant={viewMode === "graph" ? "filled" : "default"}
+                onClick={() => setViewMode("graph")}
+                size="lg"
+              >
+                <IconGraph size={18} />
+              </ActionIcon>
+            </ActionIcon.Group>
             <Button leftSection={<IconBolt size={16} />} variant="light" onClick={openQuickAdd}>
               Quick Add
             </Button>
@@ -167,14 +185,22 @@ export default function App() {
           </Group>
         </Group>
 
-        <ScrollArea>
-          <ItemList
+        {viewMode === "list" ? (
+          <ScrollArea>
+            <ItemList
+              items={filteredItems}
+              onView={handleView}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
+          </ScrollArea>
+        ) : (
+          <GraphView
             items={filteredItems}
-            onView={handleView}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
+            onClickNode={handleView}
+            height="calc(100vh - 120px)"
           />
-        </ScrollArea>
+        )}
       </AppShell.Main>
 
       <Modal
@@ -191,7 +217,7 @@ export default function App() {
         />
       </Modal>
       <Modal opened={settingsOpened} onClose={closeSettings} title="Settings" size="md">
-        <AISettings />
+        <Settings />
       </Modal>
       <Modal opened={quickAddOpened} onClose={closeQuickAdd} title="Quick Add" size="md">
         <QuickAdd onSuccess={closeQuickAdd} />

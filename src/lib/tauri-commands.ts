@@ -45,6 +45,10 @@ export async function getDataDir(): Promise<string> {
   return invoke("get_data_dir");
 }
 
+export async function setDataDir(path: string): Promise<string> {
+  return invoke("set_data_dir", { path });
+}
+
 export async function getAiSettings(): Promise<AiSettings> {
   return invoke("get_ai_settings");
 }

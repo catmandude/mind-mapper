@@ -8,13 +8,82 @@ import {
   Badge,
   Group,
   Text,
+  Divider,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
-import { getAiSettings, setAiSettings } from "../../lib/tauri-commands";
+import { open } from "@tauri-apps/plugin-dialog";
+import {
+  getAiSettings,
+  setAiSettings,
+  getDataDir,
+  setDataDir,
+} from "../../lib/tauri-commands";
 import { AI_PROVIDERS } from "../../types";
 import type { AiSettings as AiSettingsType } from "../../types";
 
-export function AISettings() {
+function DataDirSettings() {
+  const [currentDir, setCurrentDir] = useState("");
+  const [newDir, setNewDir] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    getDataDir().then((dir) => {
+      setCurrentDir(dir);
+      setNewDir(dir);
+    });
+  }, []);
+
+  const handleBrowse = async () => {
+    const selected = await open({ directory: true });
+    if (selected) {
+      setNewDir(selected);
+    }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await setDataDir(newDir);
+      setCurrentDir(newDir);
+      notifications.show({
+        message: "Data directory updated. Restart to apply.",
+      });
+    } catch (e) {
+      notifications.show({
+        message: `Failed to set data directory: ${e}`,
+        color: "red",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Stack>
+      <Text fw={500}>Data Directory</Text>
+      <Group align="end">
+        <TextInput
+          label="Path"
+          value={newDir}
+          onChange={(e) => setNewDir(e.currentTarget.value)}
+          style={{ flex: 1 }}
+        />
+        <Button variant="light" onClick={handleBrowse}>
+          Browse
+        </Button>
+      </Group>
+      <Button
+        onClick={handleSave}
+        loading={saving}
+        disabled={newDir === currentDir}
+      >
+        Save Data Directory
+      </Button>
+    </Stack>
+  );
+}
+
+export function Settings() {
   const [settings, setSettings] = useState<AiSettingsType | null>(null);
   const [provider, setProvider] = useState("openai");
   const [model, setModel] = useState("");
@@ -68,6 +137,10 @@ export function AISettings() {
 
   return (
     <Stack>
+      <DataDirSettings />
+
+      <Divider my="sm" />
+
       <Group>
         <Text fw={500}>AI Auto-Categorization</Text>
         {settings?.is_configured ? (
