@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "MindMapper",
-  "version": "0.1.0",
-  "identifier": "com.austinmiller.mind-mapper",
+  "productName": "LynxNote",
+  "version": "0.1.5",
+  "identifier": "com.austinmiller.lynxnote",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "MindMapper",
+        "title": "LynxNote",
         "width": 1200,
         "height": 800,
         "minWidth": 800,
@@ -22,7 +22,7 @@
       },
       {
         "label": "search",
-        "title": "MindMapper Search",
+        "title": "LynxNote Search",
         "width": 800,
         "height": 500,
         "visible": false,
@@ -35,7 +35,7 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://api.anthropic.com https://api.openai.com http://localhost:11434"
     }
   },
   "bundle": {
@@ -47,6 +47,9 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "macOS": {
+      "signingIdentity": "Developer ID Application: Austin Miller (NMXH7LSU63)"
+    }
   }
 }

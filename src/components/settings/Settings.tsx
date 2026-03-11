@@ -27,10 +27,12 @@ function DataDirSettings() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    getDataDir().then((dir) => {
-      setCurrentDir(dir);
-      setNewDir(dir);
-    });
+    getDataDir()
+      .then((dir) => {
+        setCurrentDir(dir);
+        setNewDir(dir);
+      })
+      .catch((e) => console.error("Failed to load data dir:", e));
   }, []);
 
   const handleBrowse = async () => {
@@ -92,12 +94,14 @@ export function Settings() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    getAiSettings().then((s) => {
-      setSettings(s);
-      if (s.provider) setProvider(s.provider);
-      if (s.model) setModel(s.model);
-      if (s.base_url) setBaseUrl(s.base_url);
-    });
+    getAiSettings()
+      .then((s) => {
+        setSettings(s);
+        if (s.provider) setProvider(s.provider);
+        if (s.model) setModel(s.model);
+        if (s.base_url) setBaseUrl(s.base_url);
+      })
+      .catch((e) => console.error("Failed to load AI settings:", e));
   }, []);
 
   const handleSave = async () => {

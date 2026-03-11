@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    mind_mapper_lib::run()
+    lynxnote_lib::run()
 }

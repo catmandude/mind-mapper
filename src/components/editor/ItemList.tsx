@@ -17,11 +17,12 @@ interface ItemListProps {
   items: Item[];
   onView: (item: Item) => void;
   onEdit: (item: Item) => void;
-  onDelete: (id: string) => void;
+  onDelete: (id: string) => void | Promise<void>;
 }
 
 export function ItemList({ items, onView, onEdit, onDelete }: ItemListProps) {
   const [deleteTarget, setDeleteTarget] = useState<Item | null>(null);
+  const [deleting, setDeleting] = useState(false);
   if (items.length === 0) {
     return (
       <Text c="dimmed" ta="center" py="xl">
@@ -106,9 +107,17 @@ export function ItemList({ items, onView, onEdit, onDelete }: ItemListProps) {
             </Button>
             <Button
               color="red"
-              onClick={() => {
-                if (deleteTarget) onDelete(deleteTarget.id);
-                setDeleteTarget(null);
+              loading={deleting}
+              onClick={async () => {
+                if (deleteTarget && !deleting) {
+                  setDeleting(true);
+                  try {
+                    await onDelete(deleteTarget.id);
+                  } finally {
+                    setDeleting(false);
+                    setDeleteTarget(null);
+                  }
+                }
               }}
             >
               Delete

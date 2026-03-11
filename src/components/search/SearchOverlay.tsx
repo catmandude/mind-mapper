@@ -53,7 +53,11 @@ export function SearchOverlayApp() {
         case "Enter":
           e.preventDefault();
           if (results[selectedIndex]) {
-            await writeText(results[selectedIndex].content);
+            try {
+              await writeText(results[selectedIndex].content);
+            } catch (err) {
+              console.error("Failed to copy to clipboard:", err);
+            }
             await getCurrentWindow().hide();
           }
           break;

@@ -3,13 +3,14 @@ import ReactDOM from "react-dom/client";
 import { MantineProvider, createTheme } from "@mantine/core";
 import { Notifications } from "@mantine/notifications";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import App from "./App";
 
 import "@mantine/core/styles.css";
 import "@mantine/notifications/styles.css";
 
 const theme = createTheme({
-  primaryColor: "blue",
+  primaryColor: "violet",
   fontFamily:
     '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
   fontFamilyMonospace:
@@ -30,7 +31,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <QueryClientProvider client={queryClient}>
       <MantineProvider theme={theme} defaultColorScheme="auto">
         <Notifications position="top-right" />
-        <App />
+        <ErrorBoundary>
+          <App />
+        </ErrorBoundary>
       </MantineProvider>
     </QueryClientProvider>
   </React.StrictMode>

@@ -64,13 +64,21 @@ fn split_frontmatter(raw: &str) -> Result<(String, String), String> {
         return Err("File does not start with frontmatter delimiter ---".to_string());
     }
 
-    let after_first = &trimmed[3..];
+    // Use str methods that are UTF-8 safe (find returns byte offsets aligned to char boundaries)
+    let after_first = trimmed.get(3..).ok_or("Invalid frontmatter start")?;
     let end = after_first
         .find("\n---")
         .ok_or("Missing closing frontmatter delimiter ---")?;
 
-    let frontmatter = after_first[..end].trim().to_string();
-    let content = after_first[end + 4..].to_string();
+    let frontmatter = after_first
+        .get(..end)
+        .ok_or("Invalid frontmatter boundary")?
+        .trim()
+        .to_string();
+    let content = after_first
+        .get(end + 4..)
+        .unwrap_or("")
+        .to_string();
 
     Ok((frontmatter, content))
 }
@@ -94,7 +102,8 @@ pub fn item_to_markdown(item: &Item) -> String {
         modified: item.modified.clone(),
     };
 
-    let yaml = serde_yaml::to_string(&fm).unwrap_or_default();
+    let yaml = serde_yaml::to_string(&fm)
+        .unwrap_or_else(|_| format!("id: {}\ntitle: {}\n", fm.id, fm.title));
     format!("---\n{}---\n\n{}\n", yaml, item.content)
 }
 

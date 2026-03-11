@@ -4,12 +4,12 @@ import {
   Badge,
   Group,
   Stack,
-  Textarea,
   Button,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { IconCopy } from "@tabler/icons-react";
+import { CodeViewer } from "./CodeViewer";
 import type { Item } from "../../types";
 
 interface ItemViewerProps {
@@ -81,13 +81,12 @@ export function ItemViewer({ item, onClose }: ItemViewerProps) {
         </Group>
       )}
 
-      <Textarea
+      <CodeViewer
         value={workingContent}
-        onChange={(e) => handleChange(e.currentTarget.value)}
-        autosize
-        minRows={4}
-        maxRows={20}
-        styles={{ input: { fontFamily: "monospace" } }}
+        language={item.language}
+        editable
+        onChange={handleChange}
+        maxHeight="500px"
       />
 
       <Group justify="flex-end">

@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { searchItems } from "../lib/tauri-commands";
 import type { Item } from "../types";
 
@@ -7,6 +7,15 @@ export function useSearch() {
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState("");
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  // Clean up pending debounce on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+  }, []);
 
   const search = useCallback((q: string) => {
     setQuery(q);

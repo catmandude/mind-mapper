@@ -3,13 +3,13 @@ import type { Item } from "../types";
 import { tokenize, overlapScore } from "./extract-keywords";
 
 const TYPE_COLORS: Record<string, string> = {
-  note: "#339af0",    // blue
-  shell: "#40c057",   // green
-  snippet: "#7950f2", // violet
-  config: "#fd7e14",  // orange
+  note: "#22d3ee",    // cyan (logo top)
+  shell: "#6366f1",   // indigo (logo mid)
+  snippet: "#8b5cf6", // violet (logo bottom)
+  config: "#7c3aed",  // purple (logo deep)
 };
 
-const DEFAULT_COLOR = "#868e96"; // gray
+const DEFAULT_COLOR = "#a78bfa"; // light violet
 
 /**
  * Build a graphology Graph from items.

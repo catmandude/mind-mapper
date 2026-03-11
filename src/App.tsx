@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import {
   AppShell,
   Title,
@@ -8,12 +8,13 @@ import {
   TextInput,
   ScrollArea,
   ActionIcon,
+  Badge,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { useQueryClient } from "@tanstack/react-query";
 import { listen } from "@tauri-apps/api/event";
-import { IconPlus, IconSearch, IconSettings, IconBolt, IconList, IconGraph } from "@tabler/icons-react";
+import { IconPlus, IconSearch, IconBolt, IconList, IconGraph, IconWand, IconX, IconFolder, IconTag, IconCategory } from "@tabler/icons-react";
 import { Sidebar } from "./components/sidebar/Sidebar";
 import { ItemList } from "./components/editor/ItemList";
 import { ItemForm } from "./components/editor/ItemForm";
@@ -21,6 +22,10 @@ import { ItemViewer } from "./components/editor/ItemViewer";
 import { Settings } from "./components/settings/Settings";
 import { GraphView } from "./components/graph/GraphView";
 import { QuickAdd } from "./components/editor/QuickAdd";
+import { RecategorizeModal } from "./components/editor/RecategorizeModal";
+import { WelcomeModal } from "./components/editor/WelcomeModal";
+import { DocumentationModal } from "./components/editor/DocumentationModal";
+import { getAiSettings, getSetting } from "./lib/tauri-commands";
 import {
   useItems,
   useCreateItem,
@@ -43,10 +48,25 @@ export default function App() {
     useDisclosure(false);
   const [viewerOpened, { open: openViewer, close: closeViewer }] =
     useDisclosure(false);
+  const [recategorizeOpened, { open: openRecategorize, close: closeRecategorize }] =
+    useDisclosure(false);
+  const [docsOpened, { open: openDocs, close: closeDocs }] =
+    useDisclosure(false);
+  const [welcomeOpened, setWelcomeOpened] = useState(false);
+  const [aiConfigured, setAiConfigured] = useState(false);
   const [editingItem, setEditingItem] = useState<Item | null>(null);
   const [viewingItem, setViewingItem] = useState<Item | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"list" | "graph">("list");
+
+  // Show welcome modal on first launch
+  useEffect(() => {
+    getSetting("welcome_shown")
+      .then((val) => {
+        if (val === null) setWelcomeOpened(true);
+      })
+      .catch(() => {});
+  }, []);
 
   // Listen for AI enrichment events to refresh item lists
   useEffect(() => {
@@ -59,6 +79,20 @@ export default function App() {
       unlisten.then((fn) => fn());
     };
   }, [queryClient]);
+  // Check AI config when recategorize modal opens
+  useEffect(() => {
+    if (recategorizeOpened) {
+      getAiSettings()
+        .then((s) => setAiConfigured(s.is_configured))
+        .catch(() => setAiConfigured(false));
+    }
+  }, [recategorizeOpened]);
+
+  const uncategorizedCount = useMemo(
+    () => items.filter((item) => item.folder === "/" || item.folder === "").length,
+    [items]
+  );
+
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<string | null>(null);
@@ -92,15 +126,15 @@ export default function App() {
     open();
   };
 
-  const handleView = (item: Item) => {
+  const handleView = useCallback((item: Item) => {
     setViewingItem(item);
     openViewer();
-  };
+  }, [openViewer]);
 
-  const handleEdit = (item: Item) => {
+  const handleEdit = useCallback((item: Item) => {
     setEditingItem(item);
     open();
-  };
+  }, [open]);
 
   const handleDelete = async (id: string) => {
     try {
@@ -143,12 +177,14 @@ export default function App() {
           onSelectFolder={setSelectedFolder}
           onSelectTag={setSelectedTag}
           onSelectType={setSelectedType}
+          onOpenSettings={openSettings}
+          onOpenDocs={openDocs}
         />
       </AppShell.Navbar>
 
       <AppShell.Main>
         <Group justify="space-between" mb="md">
-          <Title order={3}>MindMapper</Title>
+          <Title order={3}>LynxNote</Title>
           <Group>
             <TextInput
               placeholder="Filter..."
@@ -176,14 +212,77 @@ export default function App() {
             <Button leftSection={<IconBolt size={16} />} variant="light" onClick={openQuickAdd}>
               Quick Add
             </Button>
+            <Button leftSection={<IconWand size={16} />} variant="light" onClick={openRecategorize}>
+              Recategorize
+            </Button>
             <Button leftSection={<IconPlus size={16} />} onClick={handleCreate}>
               New Item
             </Button>
-            <ActionIcon variant="subtle" onClick={openSettings} size="lg">
-              <IconSettings size={20} />
-            </ActionIcon>
           </Group>
         </Group>
+
+        {(selectedType || selectedTag || selectedFolder) && (
+          <Group gap="xs" mb="sm">
+            {selectedType && (
+              <Badge
+                size="lg"
+                variant="light"
+                color="violet"
+                leftSection={<IconCategory size={14} />}
+                rightSection={
+                  <ActionIcon size="xs" variant="transparent" color="violet" onClick={() => setSelectedType(null)}>
+                    <IconX size={12} />
+                  </ActionIcon>
+                }
+              >
+                {selectedType}
+              </Badge>
+            )}
+            {selectedFolder && (
+              <Badge
+                size="lg"
+                variant="light"
+                color="cyan"
+                leftSection={<IconFolder size={14} />}
+                rightSection={
+                  <ActionIcon size="xs" variant="transparent" color="cyan" onClick={() => setSelectedFolder(null)}>
+                    <IconX size={12} />
+                  </ActionIcon>
+                }
+              >
+                {selectedFolder}
+              </Badge>
+            )}
+            {selectedTag && (
+              <Badge
+                size="lg"
+                variant="light"
+                color="indigo"
+                leftSection={<IconTag size={14} />}
+                rightSection={
+                  <ActionIcon size="xs" variant="transparent" color="indigo" onClick={() => setSelectedTag(null)}>
+                    <IconX size={12} />
+                  </ActionIcon>
+                }
+              >
+                {selectedTag}
+              </Badge>
+            )}
+            <Badge
+              size="lg"
+              variant="outline"
+              color="gray"
+              style={{ cursor: "pointer" }}
+              onClick={() => {
+                setSelectedType(null);
+                setSelectedFolder(null);
+                setSelectedTag(null);
+              }}
+            >
+              Clear all
+            </Badge>
+          </Group>
+        )}
 
         {viewMode === "list" ? (
           <ScrollArea>
@@ -225,6 +324,15 @@ export default function App() {
       <Modal opened={viewerOpened} onClose={closeViewer} title={viewingItem?.title ?? "View Item"} size="lg">
         <ItemViewer item={viewingItem} onClose={closeViewer} />
       </Modal>
+      <Modal opened={recategorizeOpened} onClose={closeRecategorize} title="Recategorize All Items" size="md" closeOnClickOutside={false} closeOnEscape={false}>
+        <RecategorizeModal
+          itemCount={items.length}
+          uncategorizedCount={uncategorizedCount}
+          aiConfigured={aiConfigured}
+        />
+      </Modal>
+      <WelcomeModal opened={welcomeOpened} onClose={() => setWelcomeOpened(false)} />
+      <DocumentationModal opened={docsOpened} onClose={closeDocs} />
     </AppShell>
   );
 }

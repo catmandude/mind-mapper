@@ -1,8 +1,11 @@
 use async_trait::async_trait;
 use reqwest::Client;
 use serde_json::json;
+use std::time::Duration;
 
-use super::provider::{AiConfig, AiMessage, AiProvider, AiResponse};
+use super::provider::{AiConfig, AiError, AiMessage, AiProvider, AiResponse};
+
+const REQUEST_TIMEOUT: Duration = Duration::from_secs(120);
 
 pub struct OllamaProvider {
     client: Client,
@@ -13,7 +16,10 @@ pub struct OllamaProvider {
 impl OllamaProvider {
     pub fn new(config: &AiConfig) -> Self {
         Self {
-            client: Client::new(),
+            client: Client::builder()
+                .timeout(REQUEST_TIMEOUT)
+                .build()
+                .unwrap_or_default(),
             model: config.model.clone(),
             base_url: config
                 .base_url
@@ -25,7 +31,7 @@ impl OllamaProvider {
 
 #[async_trait]
 impl AiProvider for OllamaProvider {
-    async fn complete(&self, messages: Vec<AiMessage>) -> Result<AiResponse, String> {
+    async fn complete(&self, messages: Vec<AiMessage>) -> Result<AiResponse, AiError> {
         let url = format!("{}/api/chat", self.base_url.trim_end_matches('/'));
 
         let msgs: Vec<serde_json::Value> = messages
@@ -52,21 +58,27 @@ impl AiProvider for OllamaProvider {
             .json(&body)
             .send()
             .await
-            .map_err(|e| format!("Ollama request failed: {}", e))?;
+            .map_err(|e| AiError::ServerError(format!("Ollama request failed: {}", e)))?;
 
         if !resp.status().is_success() {
-            let status = resp.status();
+            let status = resp.status().as_u16();
             let text = resp.text().await.unwrap_or_default();
-            return Err(format!("Ollama API error {}: {}", status, text));
+            return Err(match status {
+                429 => AiError::RateLimit { retry_after_secs: None },
+                500..=599 => AiError::ServerError(format!("Ollama API error {}: {}", status, text)),
+                _ => AiError::ClientError(format!("Ollama API error {}: {}", status, text)),
+            });
         }
 
         let data: serde_json::Value = resp
             .json()
             .await
-            .map_err(|e| format!("Ollama response parse error: {}", e))?;
+            .map_err(|e| AiError::ClientError(format!("Ollama response parse error: {}", e)))?;
 
-        let content = data["message"]["content"]
-            .as_str()
+        let content = data
+            .get("message")
+            .and_then(|msg| msg.get("content"))
+            .and_then(|t| t.as_str())
             .unwrap_or("")
             .to_string();
 

@@ -1,4 +1,4 @@
-# MindMapper
+# LynxNote
 
 A developer knowledge base desktop app built with Tauri v2. Replaces Apple Notes with instant search, markdown-backed storage, and AI-powered auto-categorization.
 
@@ -46,8 +46,8 @@ cargo tauri build
 ```
 
 Produces:
-- `src-tauri/target/release/bundle/macos/MindMapper.app`
-- `src-tauri/target/release/bundle/dmg/MindMapper_0.1.0_aarch64.dmg`
+- `src-tauri/target/release/bundle/macos/LynxNote.app`
+- `src-tauri/target/release/bundle/dmg/LynxNote_0.1.0_aarch64.dmg`
 
 ## Project Structure
 
@@ -85,13 +85,13 @@ src-tauri/                  # Rust backend
 
 | What | Path |
 |------|------|
-| Markdown files | `~/Documents/MindMapper/` |
-| SQLite database | `~/Library/Application Support/com.austinmiller.mind-mapper/mind-mapper.db` |
+| Markdown files | `~/Documents/LynxNote/` |
+| SQLite database | `~/Library/Application Support/com.austinmiller.lynxnote/lynxnote.db` |
 | AI settings | Stored in the `settings` table in SQLite |
 
 ## AI Auto-Categorization
 
-When saving an item, if fields like type, language, tags, folder, or description are left empty, MindMapper can automatically fill them using AI. The item saves immediately and enrichment happens asynchronously in the background.
+When saving an item, if fields like type, language, tags, folder, or description are left empty, LynxNote can automatically fill them using AI. The item saves immediately and enrichment happens asynchronously in the background.
 
 ### Setup
 

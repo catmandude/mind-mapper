@@ -6,7 +6,7 @@ import { SearchOverlayApp } from "./components/search/SearchOverlay";
 import "@mantine/core/styles.css";
 
 const theme = createTheme({
-  primaryColor: "blue",
+  primaryColor: "violet",
   fontFamily:
     '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
   fontFamilyMonospace:

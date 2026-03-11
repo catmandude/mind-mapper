@@ -59,7 +59,13 @@ pub fn read_ai_config(db: &rusqlite::Connection) -> Option<AiConfig> {
 
 pub async fn rebuild_ai_provider(state: &AppState) {
     let config = {
-        let db = state.db.lock().unwrap();
+        let db = match state.db.lock() {
+            Ok(db) => db,
+            Err(e) => {
+                eprintln!("Failed to acquire DB lock for AI provider rebuild: {}", e);
+                return;
+            }
+        };
         read_ai_config(&db)
     };
 

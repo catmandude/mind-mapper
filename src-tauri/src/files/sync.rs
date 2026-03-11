@@ -25,7 +25,10 @@ pub fn reconcile(conn: &Connection, data_dir: &Path) -> Result<(usize, usize, us
 
             let raw = match fs::read_to_string(&path) {
                 Ok(r) => r,
-                Err(_) => continue,
+                Err(e) => {
+                    eprintln!("Reconcile: failed to read {}: {}", path.display(), e);
+                    continue;
+                }
             };
             let hash = markdown::compute_hash(&raw);
 
@@ -34,29 +37,53 @@ pub fn reconcile(conn: &Connection, data_dir: &Path) -> Result<(usize, usize, us
                 Ok(Some(existing_hash)) if existing_hash == hash => continue,
                 Ok(Some(_)) => {
                     // File changed, re-parse and update
-                    if let Ok(item) = markdown::parse_markdown_content(&raw, &path, &hash) {
-                        let _ = queries::insert_item(conn, &item);
-                        updated += 1;
+                    match markdown::parse_markdown_content(&raw, &path, &hash) {
+                        Ok(item) => {
+                            if let Err(e) = queries::insert_item(conn, &item) {
+                                eprintln!("Reconcile: failed to update DB for {}: {}", path.display(), e);
+                            } else {
+                                updated += 1;
+                            }
+                        }
+                        Err(e) => eprintln!("Reconcile: failed to parse {}: {}", path.display(), e),
                     }
                 }
                 Ok(None) => {
                     // New file
-                    if let Ok(item) = markdown::parse_markdown_content(&raw, &path, &hash) {
-                        let _ = queries::insert_item(conn, &item);
-                        added += 1;
+                    match markdown::parse_markdown_content(&raw, &path, &hash) {
+                        Ok(item) => {
+                            if let Err(e) = queries::insert_item(conn, &item) {
+                                eprintln!("Reconcile: failed to insert DB for {}: {}", path.display(), e);
+                            } else {
+                                added += 1;
+                            }
+                        }
+                        Err(e) => eprintln!("Reconcile: failed to parse {}: {}", path.display(), e),
                     }
                 }
-                Err(_) => continue,
+                Err(e) => {
+                    eprintln!("Reconcile: failed to check hash for {}: {}", path.display(), e);
+                    continue;
+                }
             }
         }
     }
 
     // Remove DB entries for files that no longer exist
-    let all_items = queries::list_items(conn).unwrap_or_default();
+    let all_items = match queries::list_items(conn) {
+        Ok(items) => items,
+        Err(e) => {
+            eprintln!("Reconcile: failed to list items for cleanup: {}", e);
+            return Ok((added, updated, removed));
+        }
+    };
     for item in all_items {
         if !seen_paths.contains(&item.file_path) {
-            let _ = queries::delete_item(conn, &item.id);
-            removed += 1;
+            if let Err(e) = queries::delete_item(conn, &item.id) {
+                eprintln!("Reconcile: failed to remove orphaned item {}: {}", item.id, e);
+            } else {
+                removed += 1;
+            }
         }
     }
 
@@ -70,13 +97,20 @@ pub fn process_changes(
     removed: &[std::path::PathBuf],
 ) {
     for path in changed {
-        if let Ok(item) = markdown::parse_markdown_file(path) {
-            let _ = queries::insert_item(conn, &item);
+        match markdown::parse_markdown_file(path) {
+            Ok(item) => {
+                if let Err(e) = queries::insert_item(conn, &item) {
+                    eprintln!("Watcher: failed to sync {} to DB: {}", path.display(), e);
+                }
+            }
+            Err(e) => eprintln!("Watcher: failed to parse {}: {}", path.display(), e),
         }
     }
 
     for path in removed {
         let path_str = path.to_string_lossy().to_string();
-        let _ = queries::delete_item_by_path(conn, &path_str);
+        if let Err(e) = queries::delete_item_by_path(conn, &path_str) {
+            eprintln!("Watcher: failed to remove {} from DB: {}", path.display(), e);
+        }
     }
 }

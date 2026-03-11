@@ -166,15 +166,15 @@ fn spawn_enrichment(
                 Err(_) => return,
             };
 
-            // If title changed, delete the old file (old placeholder filename)
-            if title_changed {
-                let old_path = &updated.file_path;
-                let _ = std::fs::remove_file(old_path);
-            }
-
+            // Save new file first, then delete old (prevents data loss if save fails)
             if let Err(e) = markdown::save_item_to_file(&data_dir, &updated) {
                 eprintln!("Failed to save enriched item file: {}", e);
                 return;
+            }
+
+            if title_changed {
+                let old_path = &updated.file_path;
+                let _ = std::fs::remove_file(old_path);
             }
 
             // Recompute hash
@@ -297,12 +297,13 @@ pub fn update_item(
     let new_path = markdown::item_file_path(&data_dir, &updated.title, &updated.id);
     let new_path_str = new_path.to_string_lossy().to_string();
 
+    // Save new file first, then delete old (prevents data loss if save fails)
+    let file_path = markdown::save_item_to_file(&data_dir, &updated)
+        .map_err(|e| format!("Failed to save file: {}", e))?;
+
     if existing.file_path != new_path_str {
         let _ = std::fs::remove_file(&existing.file_path);
     }
-
-    let file_path = markdown::save_item_to_file(&data_dir, &updated)
-        .map_err(|e| format!("Failed to save file: {}", e))?;
 
     let raw = std::fs::read_to_string(&file_path).map_err(|e| e.to_string())?;
     let hash = markdown::compute_hash(&raw);
@@ -332,8 +333,9 @@ pub fn delete_item(state: State<AppState>, id: String) -> Result<(), String> {
         .map_err(|e| e.to_string())?
         .ok_or_else(|| "Item not found".to_string())?;
 
-    let _ = std::fs::remove_file(&item.file_path);
+    // Delete from DB first so reconciliation won't re-add if file delete fails
     queries::delete_item(&db, &id).map_err(|e| e.to_string())?;
+    let _ = std::fs::remove_file(&item.file_path);
 
     Ok(())
 }

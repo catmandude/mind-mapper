@@ -56,3 +56,7 @@ export async function getAiSettings(): Promise<AiSettings> {
 export async function setAiSettings(input: AiSettingsInput): Promise<AiSettings> {
   return invoke("set_ai_settings", { input });
 }
+
+export async function recategorizeAll(includeManual: boolean, maxFolders?: number): Promise<void> {
+  return invoke("recategorize_all", { includeManual, maxFolders });
+}

@@ -3,16 +3,17 @@ import {
   TextInput,
   Select,
   TagsInput,
-  Textarea,
   Button,
   Group,
   Stack,
+  Input,
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import type { Item, CreateItemInput, ItemType } from "../../types";
 import { ITEM_TYPES, LANGUAGES } from "../../types";
 import { findDuplicates } from "../../lib/find-duplicates";
 import { DuplicateWarning } from "./DuplicateWarning";
+import { CodeViewer } from "./CodeViewer";
 
 interface ItemFormProps {
   item?: Item | null;
@@ -32,7 +33,7 @@ export function ItemForm({ item, onSubmit, onCancel, loading }: ItemFormProps) {
       type: (item?.type || "note") as ItemType,
       language: item?.language || "",
       tags: item?.tags || [],
-      folder: item?.folder || "/",
+      folder: item?.folder && item.folder !== "/" ? item.folder : "",
       description: item?.description || "",
       content: item?.content || "",
     },
@@ -103,8 +104,8 @@ export function ItemForm({ item, onSubmit, onCancel, loading }: ItemFormProps) {
           {...form.getInputProps("tags")}
         />
         <TextInput
-          label="Folder"
-          placeholder="/"
+          label="Category"
+          placeholder="/devops, /frontend, /database..."
           {...form.getInputProps("folder")}
         />
         <TextInput
@@ -112,15 +113,15 @@ export function ItemForm({ item, onSubmit, onCancel, loading }: ItemFormProps) {
           placeholder="Brief description..."
           {...form.getInputProps("description")}
         />
-        <Textarea
-          label="Content"
-          placeholder="Your snippet, command, or note..."
-          minRows={8}
-          autosize
-          maxRows={20}
-          styles={{ input: { fontFamily: "monospace" } }}
-          {...form.getInputProps("content")}
-        />
+        <Input.Wrapper label="Content">
+          <CodeViewer
+            value={form.values.content}
+            language={form.values.language}
+            editable
+            onChange={(val) => form.setFieldValue("content", val)}
+            maxHeight="300px"
+          />
+        </Input.Wrapper>
         {duplicates.length > 0 && (
           <DuplicateWarning
             duplicates={duplicates}

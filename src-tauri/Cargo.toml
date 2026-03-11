@@ -1,12 +1,12 @@
 [package]
-name = "mind-mapper"
-version = "0.1.0"
+name = "lynxnote"
+version = "0.1.5"
 description = "Developer Knowledge Base"
 authors = ["Austin Miller"]
 edition = "2021"
 
 [lib]
-name = "mind_mapper_lib"
+name = "lynxnote_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

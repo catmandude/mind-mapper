@@ -4,7 +4,7 @@ mod db;
 mod files;
 mod state;
 
-use commands::{ai as ai_commands, search, settings, snippets};
+use commands::{ai as ai_commands, recategorize, search, settings, snippets};
 use rusqlite::Connection;
 use state::AppState;
 use std::fs;
@@ -19,7 +19,7 @@ use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 fn default_data_dir() -> PathBuf {
     dirs::document_dir()
         .unwrap_or_else(|| dirs::home_dir().unwrap_or_else(|| PathBuf::from(".")))
-        .join("MindMapper")
+        .join("LynxNote")
 }
 
 fn resolve_data_dir(conn: &Connection) -> PathBuf {
@@ -36,9 +36,9 @@ fn resolve_data_dir(conn: &Connection) -> PathBuf {
 fn get_db_path() -> PathBuf {
     let app_support = dirs::data_local_dir()
         .unwrap_or_else(|| dirs::home_dir().unwrap_or_else(|| PathBuf::from(".")))
-        .join("com.austinmiller.mind-mapper");
+        .join("com.austinmiller.lynxnote");
     fs::create_dir_all(&app_support).expect("Failed to create app support directory");
-    app_support.join("mind-mapper.db")
+    app_support.join("lynxnote.db")
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -74,13 +74,13 @@ pub fn run() {
         .manage(app_state)
         .setup(move |app| {
             // Set up system tray
-            let quit = MenuItem::with_id(app, "quit", "Quit MindMapper", true, None::<&str>)?;
-            let show = MenuItem::with_id(app, "show", "Show MindMapper", true, None::<&str>)?;
+            let quit = MenuItem::with_id(app, "quit", "Quit LynxNote", true, None::<&str>)?;
+            let show = MenuItem::with_id(app, "show", "Show LynxNote", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&show, &quit])?;
 
             let _tray = TrayIconBuilder::new()
                 .menu(&menu)
-                .tooltip("MindMapper")
+                .tooltip("LynxNote")
                 .on_menu_event(|app, event| match event.id.as_ref() {
                     "quit" => {
                         app.exit(0);
@@ -105,12 +105,24 @@ pub fn run() {
             // Set up file watcher
             let app_handle = app.handle().clone();
             let watch_dir = data_dir.clone();
-            let _watcher = files::watcher::FileWatcher::new(watch_dir, move |changed, removed| {
+            let _watcher = match files::watcher::FileWatcher::new(watch_dir, move |changed, removed| {
                 let state = app_handle.state::<AppState>();
-                let db = state.db.lock().unwrap();
+                let db = match state.db.lock() {
+                    Ok(db) => db,
+                    Err(e) => {
+                        eprintln!("File watcher: failed to acquire DB lock: {}", e);
+                        return;
+                    }
+                };
                 files::sync::process_changes(&db, &changed, &removed);
                 drop(db);
-            });
+            }) {
+                Ok(w) => Some(w),
+                Err(e) => {
+                    eprintln!("Failed to start file watcher: {}", e);
+                    None
+                }
+            };
 
             // Set up global shortcut
             app.global_shortcut().on_shortcut(
@@ -147,6 +159,7 @@ pub fn run() {
             settings::set_data_dir,
             ai_commands::get_ai_settings,
             ai_commands::set_ai_settings,
+            recategorize::recategorize_all,
         ])
         .on_window_event(|window, event| {
             // Hide search window on blur instead of closing

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSigma, useRegisterEvents } from "@react-sigma/core";
 import type { Item } from "../../types";
 
@@ -12,7 +12,7 @@ export function GraphEvents({ items, onClickNode }: GraphEventsProps) {
   const registerEvents = useRegisterEvents();
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
 
-  const itemMap = new Map(items.map((item) => [item.id, item]));
+  const itemMap = useMemo(() => new Map(items.map((item) => [item.id, item])), [items]);
 
   useEffect(() => {
     registerEvents({
@@ -23,7 +23,7 @@ export function GraphEvents({ items, onClickNode }: GraphEventsProps) {
       enterNode: ({ node }) => setHoveredNode(node),
       leaveNode: () => setHoveredNode(null),
     });
-  }, [registerEvents, items, onClickNode]);
+  }, [registerEvents, itemMap, onClickNode]);
 
   // Highlight hovered node and its neighbors
   useEffect(() => {

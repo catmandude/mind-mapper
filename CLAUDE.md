@@ -1,4 +1,4 @@
-# MindMapper
+# LynxNote
 
 Developer knowledge base desktop app replacing Apple Notes. Instant search for commands, configs, and snippets.
 
@@ -6,7 +6,7 @@ Developer knowledge base desktop app replacing Apple Notes. Instant search for c
 
 - **Desktop**: Tauri v2 (Rust backend, WebView frontend)
 - **Frontend**: React 19 + TypeScript + Vite 7 + Mantine UI 8
-- **Storage**: Markdown files (source of truth in `~/Documents/MindMapper/`) + SQLite FTS5 (derived index)
+- **Storage**: Markdown files (source of truth in `~/Documents/LynxNote/`) + SQLite FTS5 (derived index)
 - **Graph**: Sigma.js + Graphology (WebGL-rendered force-directed graph view)
 - **AI**: Pluggable providers (OpenAI, Claude, Ollama) — trait defined, implementations started
 
@@ -87,6 +87,6 @@ src-tauri/src/                # Rust backend
 
 ## Data Paths
 
-- Markdown files: `~/Documents/MindMapper/`
-- SQLite DB: `~/Library/Application Support/com.austinmiller.mind-mapper/mind-mapper.db`
-- App bundle: `src-tauri/target/release/bundle/macos/MindMapper.app`
+- Markdown files: `~/Documents/LynxNote/`
+- SQLite DB: `~/Library/Application Support/com.austinmiller.lynxnote/lynxnote.db`
+- App bundle: `src-tauri/target/release/bundle/macos/LynxNote.app`

@@ -64,6 +64,13 @@ export const AI_PROVIDERS = [
   { value: "ollama", label: "Ollama" },
 ];
 
+export interface RecategorizeProgress {
+  phase: string;
+  current: number;
+  total: number;
+  message: string;
+}
+
 export const LANGUAGES = [
   "bash",
   "javascript",

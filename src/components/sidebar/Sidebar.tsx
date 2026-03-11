@@ -13,6 +13,8 @@ import {
   IconTerminal,
   IconCode,
   IconSettings,
+  IconApps,
+  IconBook,
 } from "@tabler/icons-react";
 import { useTags, useFolders } from "../../hooks/useItems";
 
@@ -23,6 +25,8 @@ interface SidebarProps {
   onSelectFolder: (folder: string | null) => void;
   onSelectTag: (tag: string | null) => void;
   onSelectType: (type: string | null) => void;
+  onOpenSettings: () => void;
+  onOpenDocs: () => void;
 }
 
 const TYPE_ICONS: Record<string, React.ReactNode> = {
@@ -39,18 +43,21 @@ export function Sidebar({
   onSelectFolder,
   onSelectTag,
   onSelectType,
+  onOpenSettings,
+  onOpenDocs,
 }: SidebarProps) {
   const { data: tags = [] } = useTags();
   const { data: folders = [] } = useFolders();
 
   return (
-    <ScrollArea h="100%">
-      <Stack gap="xs" p="sm">
+    <ScrollArea h="100%" style={{ display: "flex", flexDirection: "column" }}>
+      <Stack gap="xs" p="sm" style={{ flex: 1 }}>
         <Text size="xs" fw={700} c="dimmed" tt="uppercase">
           Types
         </Text>
         <NavLink
-          label="All"
+          label="All Types"
+          leftSection={<IconApps size={16} />}
           active={selectedType === null}
           onClick={() => onSelectType(null)}
         />
@@ -70,7 +77,8 @@ export function Sidebar({
           Folders
         </Text>
         <NavLink
-          label="All"
+          label="All Folders"
+          leftSection={<IconApps size={16} />}
           active={selectedFolder === null}
           onClick={() => onSelectFolder(null)}
         />
@@ -110,6 +118,19 @@ export function Sidebar({
             </Text>
           )}
         </Group>
+
+        <Divider my="xs" />
+
+        <NavLink
+          label="Documentation"
+          leftSection={<IconBook size={16} />}
+          onClick={onOpenDocs}
+        />
+        <NavLink
+          label="Settings"
+          leftSection={<IconSettings size={16} />}
+          onClick={onOpenSettings}
+        />
       </Stack>
     </ScrollArea>
   );
