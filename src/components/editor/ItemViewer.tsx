@@ -11,6 +11,7 @@ import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { IconCopy } from "@tabler/icons-react";
 import { CodeViewer } from "./CodeViewer";
 import type { Item } from "../../types";
+import { absoluteDateTime, relativeTime } from "../../lib/format-date";
 
 interface ItemViewerProps {
   item: Item | null;
@@ -80,6 +81,15 @@ export function ItemViewer({ item, onClose }: ItemViewerProps) {
           ))}
         </Group>
       )}
+
+      <Group gap="md">
+        <Text size="xs" c="dimmed" title={absoluteDateTime(item.created)}>
+          Created {relativeTime(item.created)}
+        </Text>
+        <Text size="xs" c="dimmed" title={absoluteDateTime(item.modified)}>
+          Modified {relativeTime(item.modified)}
+        </Text>
+      </Group>
 
       <CodeViewer
         value={workingContent}

@@ -12,6 +12,7 @@ import {
 } from "@mantine/core";
 import { IconTrash, IconEdit } from "@tabler/icons-react";
 import type { Item } from "../../types";
+import { relativeTime, absoluteDateTime } from "../../lib/format-date";
 
 interface ItemListProps {
   items: Item[];
@@ -69,6 +70,9 @@ export function ItemList({ items, onView, onEdit, onDelete }: ItemListProps) {
                   ))}
                 </Group>
               )}
+              <Text size="xs" c="dimmed" title={`Modified ${absoluteDateTime(item.modified)}\nCreated ${absoluteDateTime(item.created)}`}>
+                {relativeTime(item.modified)}
+              </Text>
             </Stack>
             <Group gap={4}>
               <ActionIcon

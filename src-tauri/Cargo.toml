@@ -1,6 +1,6 @@
 [package]
 name = "lynxnote"
-version = "0.1.6"
+version = "0.1.7"
 description = "Developer Knowledge Base"
 authors = ["Austin Miller"]
 edition = "2021"
