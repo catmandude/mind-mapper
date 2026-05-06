@@ -5,7 +5,7 @@ Developer knowledge base desktop app replacing Apple Notes. Instant search for c
 ## Tech Stack
 
 - **Desktop**: Tauri v2 (Rust backend, WebView frontend)
-- **Frontend**: React 19 + TypeScript + Vite 7 + Mantine UI 8
+- **Frontend**: React 19 + TypeScript 6 + Vite 8 + Mantine UI 9
 - **Storage**: Markdown files (source of truth in `~/Documents/LynxNote/`) + SQLite FTS5 (derived index)
 - **Graph**: Sigma.js + Graphology (WebGL-rendered force-directed graph view)
 - **AI**: Pluggable providers (OpenAI, Claude, Ollama) — trait defined, implementations started
@@ -15,10 +15,16 @@ Developer knowledge base desktop app replacing Apple Notes. Instant search for c
 ```bash
 export PATH="$HOME/.cargo/bin:$PATH"
 cargo tauri dev        # development (hot-reload frontend + Rust backend)
-cargo tauri build      # production (.app + .dmg)
+cargo tauri build      # production build, unnotarized (.app + .dmg)
+npm run build:signed   # production build with codesign + notarization (sources .env)
 npx tsc --noEmit       # frontend type check only
 npx vite build         # frontend build only
 ```
+
+`build:signed` reads Apple credentials from `.env` (gitignored): `APPLE_SIGNING_IDENTITY`,
+`APPLE_ID`, `APPLE_TEAM_ID`, `APPLE_PASSWORD` (app-specific). It signs and notarizes the
+.app via Tauri, then notarizes and staples the DMG so Gatekeeper accepts the downloaded
+DMG on other Macs.
 
 ## Project Structure
 
@@ -37,12 +43,13 @@ src/                          # React frontend
     extract-keywords.ts       # tokenize() + overlapScore() for text similarity
     find-duplicates.ts        # Duplicate item detection
     graph-builder.ts          # Builds Graphology graph from Item[]
+    format-date.ts            # relativeTime() + absoluteDateTime() for item timestamps
   components/
     editor/                   # ItemList, ItemForm, ItemViewer, QuickAdd, DuplicateWarning
     graph/                    # GraphView, GraphEvents, GraphLegend
     search/SearchOverlay.tsx  # Global hotkey search (Cmd+Shift+Space)
     sidebar/Sidebar.tsx       # Folder/tag/type filters
-    settings/AISettings.tsx   # AI provider configuration
+    settings/Settings.tsx     # AI provider config + data directory picker
 
 src-tauri/src/                # Rust backend
   lib.rs                      # App setup: DB init, file watcher, global shortcut, tray
